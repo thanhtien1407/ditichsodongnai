@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bản Đồ Số Vệ Tinh Di Tích Lịch Sử Đồng Nai</title>
+
+  <!-- Thư viện Leaflet.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --primary: #8b1e1e;
+      --primary-dark: #6b1111;
+      --secondary: #c9963b;
+      --bg-light: #fdfaf5;
+      --text-dark: #2c221e;
+      --card-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+
+    header {
+      background: linear-gradient(135deg, #6b1111 0%, #8b1e1e 60%, #a83232 100%);
+      color: #fff;
+      text-align: center;
+      padding: 2.6rem 1.5rem;
+      border-bottom: 6px solid var(--secondary);
+    }
+
+    header h1 {
+      font-size: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+      color: #ffe8b3;
+    }
+
+    header p {
+      max-width: 780px;
+      margin: 0 auto;
+      font-size: 1rem;
+      opacity: 0.92;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 2rem auto;
+      padding: 0 1.2rem;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 1.6rem;
+      color: var(--primary);
+      margin-bottom: 0.35rem;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 1.4rem;
+      font-size: 0.94rem;
+    }
+
+    /* Khu vực Bản đồ Vệ tinh */
+    .map-wrapper {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.3rem;
+      border: 2px solid var(--secondary);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      margin-bottom: 3rem;
+    }
+
+    .map-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .btn-filter {
+      background: #f9f3e6;
+      color: var(--text-dark);
+      border: 1px solid var(--secondary);
+      padding: 0.48rem 0.95rem;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-filter:hover,
+    .btn-filter.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    #historical-map {
+      width: 100%;
+      height: 460px;
+      border-radius: 12px;
+      border: 2px solid #2c221e;
+      z-index: 1;
+      background: #0f1c16;
+    }
+
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.85rem;
+      font-size: 0.84rem;
+      color: #555;
+      gap: 0.5rem;
+    }
+
+    /* Ghim đánh số nổi bật trên nền Vệ tinh */
+    .custom-pin {
+      background: var(--primary);
+      color: #fff;
+      border: 2.5px solid #ffe8b3;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Hộp thoại Popup trên bản đồ */
+    .popup-content h4 {
+      color: var(--primary);
+      font-size: 1.02rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .popup-era {
+      display: inline-block;
+      background: #ffe8b3;
+      color: #704b08;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-bottom: 0.35rem;
+    }
+
+    .popup-content p {
+      font-size: 0.84rem;
+      color: #444;
+      margin: 0.35rem 0 0.6rem;
+    }
+
+    .popup-link {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff !important;
+      text-decoration: none;
+      padding: 5px 11px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Lưới 4 Thẻ Mã QR */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid #e6dccf;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(139, 30, 30, 0.14);
+    }
+
+    .card-badge {
+      background: var(--secondary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.45rem 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-body {
+      padding: 1.3rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-body h3 {
+      color: var(--primary);
+      font-size: 1.18rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .location-tag {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 0.7rem;
+      font-weight: 600;
+    }
+
+    .desc {
+      font-size: 0.9rem;
+      color: #444;
+      margin-bottom: 1.1rem;
+      flex: 1;
+    }
+
+    .qr-box {
+      background: #f9f5ed;
+      border: 1px dashed var(--secondary);
+      border-radius: 10px;
+      padding: 0.95rem;
+      text-align: center;
+    }
+
+    .qr-box img {
+      width: 140px;
+      height: 140px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px;
+      border: 1px solid #ddd;
+      margin-bottom: 0.4rem;
+    }
+
+    .qr-box span {
+      display: block;
+      font-size: 0.76rem;
+      color: #555;
+      margin-bottom: 0.6rem;
+      word-break: break-all;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.45rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-map {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      padding: 0.45rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-focus {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    /* Bảng Infographic */
+    .infographic-box {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.8rem;
+      border: 2px solid var(--secondary);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2.8rem;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .stat-item {
+      background: #fcf6ea;
+      border-left: 5px solid var(--primary);
+      padding: 0.95rem 1.1rem;
+      border-radius: 8px;
+    }
+
+    .stat-item .num {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-item .label {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+    }
+
+    th, td {
+      padding: 0.9rem 0.95rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #faf7f2;
+    }
+
+    .tag-era {
+      display: inline-block;
+      padding: 0.22rem 0.55rem;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: #ffe8b3;
+      color: #704b08;
+    }
+
+    .table-link {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .table-link:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      background: #2c221e;
+      color: #d1c7bd;
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Bản Đồ Số Vệ Tinh Di Tích Lịch Sử Đồng Nai</h1>
+    <p>Hành trình số hóa không gian di sản từ thời kỳ mở cõi Trấn Biên đến phong trào cách mạng miền Đông Nam Bộ</p>
+  </header>
+
+  <div class="container">
+
+    <!-- PHẦN 1: BẢN ĐỒ VỆ TINH TƯƠNG TÁC -->
+    <section id="map-section">
+      <h2 class="section-title">1. Bản Đồ Vệ Tinh Tương Tác Trực Tuyến</h2>
+      <p class="section-subtitle">Chạm vào từng địa danh hoặc ghim số để thu phóng cận cảnh không gian vệ tinh của từng di tích</p>
+
+      <div class="map-wrapper">
+        <div class="map-controls">
+          <button class="btn-filter active" onclick="showAllSites(this)">🛰️ Toàn cảnh Vệ tinh (4 Di tích)</button>
+          <button class="btn-filter" onclick="focusSite(0, this)">1. Đền thờ Nguyễn Hữu Cảnh (1698)</button>
+          <button class="btn-filter" onclick="focusSite(1, this)">2. Văn miếu Trấn Biên (1715)</button>
+          <button class="btn-filter" onclick="focusSite(2, this)">3. Phú Riềng Đỏ (1929)</button>
+          <button class="btn-filter" onclick="focusSite(3, this)">4. Chiến khu Đ (1946–1975)</button>
+        </div>
+
+        <div id="historical-map"></div>
+
+        <div class="map-legend">
+          <span>🛰️ <strong>Chế độ hiển thị:</strong> 100% Ảnh Vệ tinh Thực tế (Nhấp vào ghim số để mở link Google Maps gốc).</span>
+          <span>⎯ ⎯ ⎯ Tuyến kết nối dòng chảy lịch sử (1698 → 1975)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 2: 4 THẺ MÃ QR ĐỊNH VỊ -->
+    <section>
+      <h2 class="section-title">2. Thẻ Bản Đồ Số & Mã QR Định Vị Chính Xác</h2>
+      <p class="section-subtitle">Quét mã QR bằng điện thoại để mở trực tiếp địa điểm trên ứng dụng Google Maps</p>
+
+      <div class="cards-grid">
+        <!-- Card 1: Đền thờ Nguyễn Hữu Cảnh -->
+        <div class="card">
+          <div class="card-badge">1 • Di tích Mở cõi (1698)</div>
+          <div class="card-body">
+            <h3>Đền thờ Nguyễn Hữu Cảnh</h3>
+            <div class="location-tag">📍 P. Hiệp Hòa (Cù lao Phố), TP. Biên Hòa</div>
+            <p class="desc">
+              Nơi thờ Lễ Thành Hầu Nguyễn Hữu Cảnh — vị tướng vâng mệnh chúa Nguyễn vào kinh lược phương Nam, lập dinh Trấn Biên năm 1698 và khai mở thương cảng Cù lao Phố.
+            </p>
+            <div class="qr-box">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://maps.app.goo.gl/Dde4qzUF2fNYxFsLA" alt="QR Đền thờ Nguyễn Hữu Cảnh">
+              <span>maps.app.goo.gl/Dde4qzUF2fNYxFsLA</span>
+              <div class="card-actions">
+                <button class="btn-map btn-focus" onclick="scrollToMapAndFocus(0)">🛰️ Xem Vệ tinh</button>
+                <a class="btn-map" href="https://maps.app.goo.gl/Dde4qzUF2fNYxFsLA" target="_blank">Google Maps ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Văn miếu Trấn Biên -->
+        <div class="card">
+          <div class="card-badge">2 • Di tích Văn hiến (1715)</div>
+          <div class="card-body">
+            <h3>Văn miếu Trấn Biên</h3>
+            <div class="location-tag">📍 P. Bửu Long, TP. Biên Hòa, Đồng Nai</div>
+            <p class="desc">
+              Văn miếu đầu tiên tại xứ Đàng Trong được xây dựng năm 1715 dưới thời chúa Nguyễn Phúc Chu, biểu tượng cho truyền thống tôn sư trọng đạo và văn hiến miền Nam.
+            </p>
+            <div class="qr-box">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://maps.app.goo.gl/f9eMkYdfjTRMWsTM9" alt="QR Văn miếu Trấn Biên">
+              <span>maps.app.goo.gl/f9eMkYdfjTRMWsTM9</span>
+              <div class="card-actions">
+                <button class="btn-map btn-focus" onclick="scrollToMapAndFocus(1)">🛰️ Xem Vệ tinh</button>
+                <a class="btn-map" href="https://maps.app.goo.gl/f9eMkYdfjTRMWsTM9" target="_blank">Google Maps ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Khu di tích Phú Riềng Đỏ -->
+        <div class="card">
+          <div class="card-badge">3 • Phong trào Công nhân (1929)</div>
+          <div class="card-body">
+            <h3>Khu di tích Phú Riềng Đỏ</h3>
+            <div class="location-tag">📍 Xã Thuận Lợi, H. Đồng Phú (Phụ cận)</div>
+            <p class="desc">
+              Thuộc tỉnh Biên Hòa xưa, nơi thành lập Chi bộ Cộng sản đầu tiên ở Đông Nam Bộ (28/10/1929) và nổ ra cuộc bãi công vang dội của 5.000 công nhân cao su năm 1930.
+            </p>
+            <div class="qr-box">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://maps.app.goo.gl/xXqEdQbbngTtQb9h7" alt="QR Khu di tích Phú Riềng Đỏ">
+              <span>maps.app.goo.gl/xXqEdQbbngTtQb9h7</span>
+              <div class="card-actions">
+                <button class="btn-map btn-focus" onclick="scrollToMapAndFocus(2)">🛰️ Xem Vệ tinh</button>
+                <a class="btn-map" href="https://maps.app.goo.gl/xXqEdQbbngTtQb9h7" target="_blank">Google Maps ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Chiến khu Đ -->
+        <div class="card">
+          <div class="card-badge">4 • Căn cứ Kháng chiến (1946–1975)</div>
+          <div class="card-body">
+            <h3>Chiến khu Đ</h3>
+            <div class="location-tag">📍 Xã Mã Đà, H. Vĩnh Cửu, Đồng Nai</div>
+            <p class="desc">
+              Căn cứ địa cách mạng kiên cường vùng rừng núi Đông Nam Bộ xuyên suốt hai cuộc kháng chiến chống Pháp và chống Mỹ, nơi lưu giữ Địa đạo Suối Linh và Nghĩa trang Mã Đà.
+            </p>
+            <div class="qr-box">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://maps.app.goo.gl/qWDUoPKj9Z3Rxmra6" alt="QR Chiến khu Đ">
+              <span>maps.app.goo.gl/qWDUoPKj9Z3Rxmra6</span>
+              <div class="card-actions">
+                <button class="btn-map btn-focus" onclick="scrollToMapAndFocus(3)">🛰️ Xem Vệ tinh</button>
+                <a class="btn-map" href="https://maps.app.goo.gl/qWDUoPKj9Z3Rxmra6" target="_blank">Google Maps ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 3: BẢNG INFOGRAPHIC TỔNG HỢP -->
+    <section class="infographic-box">
+      <h2 class="section-title">3. Bảng Infographic Tổng Hợp Di Sản</h2>
+      <p class="section-subtitle">Hệ thống hóa thông số không gian vệ tinh và giá trị lịch sử của 4 cụm di tích tiêu biểu</p>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="num">325+ Năm</div>
+          <div class="label">Chiều dài lịch sử từ thời mở cõi Trấn Biên (1698)</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">04 Di tích</div>
+          <div class="label">Đều được xếp hạng Di tích Lịch sử Cấp Quốc gia</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">02 Thời kỳ</div>
+          <div class="label">Khai phá văn hiến Đàng Trong & Đấu tranh Cách mạng</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">100% Vệ tinh</div>
+          <div class="label">Bản đồ vệ tinh trực quan kết hợp mã QR Google Maps</div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Di tích lịch sử</th>
+              <th>Mốc thời gian</th>
+              <th>Vị trí & Link Bản đồ số</th>
+              <th>Sự kiện & Nhân vật tiêu biểu</th>
+              <th>Giá trị giáo dục di sản</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Đền thờ Nguyễn Hữu Cảnh</strong></td>
+              <td><span class="tag-era">1698 - 1700</span></td>
+              <td>P. Hiệp Hòa, TP. Biên Hòa<br><a class="table-link" href="https://maps.app.goo.gl/Dde4qzUF2fNYxFsLA" target="_blank">📍 Mở định vị gốc ↗</a></td>
+              <td>Lễ Thành Hầu Nguyễn Hữu Cảnh lập dinh Trấn Biên, khai mở vùng đất phương Nam.</td>
+              <td>Tri ân tiền nhân mở cõi, tìm hiểu kiến trúc đình đền Nam Bộ cổ.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Văn miếu Trấn Biên</strong></td>
+              <td><span class="tag-era">1715</span></td>
+              <td>P. Bửu Long, TP. Biên Hòa<br><a class="table-link" href="https://maps.app.goo.gl/f9eMkYdfjTRMWsTM9" target="_blank">📍 Mở định vị gốc ↗</a></td>
+              <td>Chúa Nguyễn Phúc Chu cho dựng Văn miếu đầu tiên ở miền Nam; trùng tu quy mô lớn năm 2002.</td>
+              <td>Biểu tượng truyền thống tôn sư trọng đạo, hiếu học và hào khí Đồng Nai.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Khu di tích Phú Riềng Đỏ</strong></td>
+              <td><span class="tag-era">1929 - 1930</span></td>
+              <td>Xã Thuận Lợi, H. Đồng Phú<br><a class="table-link" href="https://maps.app.goo.gl/xXqEdQbbngTtQb9h7" target="_blank">📍 Mở định vị gốc ↗</a></td>
+              <td>Bí thư Nguyễn Xuân Cừ và cuộc bãi công của 5.000 phu cao su chống thực dân Pháp.</td>
+              <td>Minh chứng sức mạnh đoàn kết của giai cấp công nhân cao su Đông Nam Bộ.</td>
+            </tr>
+            <tr>
+              <td><strong>4. Chiến khu Đ</strong></td>
+              <td><span class="tag-era">1946 - 1975</span></td>
+              <td>Xã Mã Đà, H. Vĩnh Cửu<br><a class="table-link" href="https://maps.app.goo.gl/qWDUoPKj9Z3Rxmra6" target="_blank">📍 Mở định vị gốc ↗</a></td>
+              <td>Huỳnh Văn Nghệ, Trung ương Cục miền Nam, Tiểu đoàn 303 và lực lượng vũ trang miền Đông.</td>
+              <td>Biểu tượng ý chí bất khuất "Miền Đông gian lao mà anh dũng".</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    Dự án Số hóa Lịch sử Địa phương • Bản đồ số Vệ tinh, Mã QR & Infographic Di tích Đồng Nai
+  </footer>
+
+  <!-- Thư viện Leaflet.js Script -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Dữ liệu 4 di tích với link Google Maps chính xác của bạn
+    const sites = [
+      {
+        order: 1,
+        name: "Đền thờ Nguyễn Hữu Cảnh",
+        era: "1698 – Thời kỳ Mở cõi",
+        coords: [10.9304, 106.8248],
+        address: "Phường Hiệp Hòa (Cù lao Phố), TP. Biên Hòa, Đồng Nai",
+        summary: "Gắn với sự kiện Lễ Thành Hầu Nguyễn Hữu Cảnh lập dinh Trấn Biên (1698) và phát triển thương cảng Cù lao Phố.",
+        gmap: "https://maps.app.goo.gl/Dde4qzUF2fNYxFsLA"
+      },
+      {
+        order: 2,
+        name: "Văn miếu Trấn Biên",
+        era: "1715 – Văn hiến Đàng Trong",
+        coords: [10.9633, 106.8014],
+        address: "Phường Bửu Long, TP. Biên Hòa, Đồng Nai",
+        summary: "Văn miếu đầu tiên tại miền Nam do chúa Nguyễn Phúc Chu cho xây dựng, tôn vinh Khổng Tử và các bậc hiền tài.",
+        gmap: "https://maps.app.goo.gl/f9eMkYdfjTRMWsTM9"
+      },
+      {
+        order: 3,
+        name: "Khu di tích Phú Riềng Đỏ",
+        era: "1929–1930 – Phong trào Công nhân",
+        coords: [11.6433, 106.8983],
+        address: "Xã Thuận Lợi, Huyện Đồng Phú (thuộc tỉnh Biên Hòa xưa)",
+        summary: "Nơi ra đời Chi bộ Cộng sản đầu tiên ở Đông Nam Bộ (28/10/1929) và cuộc bãi công của 5.000 công nhân cao su.",
+        gmap: "https://maps.app.goo.gl/xXqEdQbbngTtQb9h7"
+      },
+      {
+        order: 4,
+        name: "Căn cứ Chiến khu Đ",
+        era: "1946–1975 – Kháng chiến chống Pháp & Mỹ",
+        coords: [11.3153, 107.0375],
+        address: "Xã Mã Đà, Huyện Vĩnh Cửu, Đồng Nai",
+        summary: "Căn cứ địa cách mạng trọng yếu của miền Đông Nam Bộ, nơi bảo tồn Địa đạo Suối Linh và Nghĩa trang Liệt sĩ Mã Đà.",
+        gmap: "https://maps.app.goo.gl/qWDUoPKj9Z3Rxmra6"
+      }
+    ];
+
+    // Chỉ sử dụng duy nhất Lớp Bản đồ Vệ tinh Esri World Imagery (Không cần API Key)
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18,
+      attribution: '&copy; Esri World Imagery'
+    });
+
+    // Khởi tạo bản đồ chỉ hiển thị chế độ Vệ tinh
+    const map = L.map('historical-map', {
+      center: [11.25, 106.90],
+      zoom: 10,
+      layers: [satelliteLayer]
+    });
+
+    const markers = [];
+    const latLngList = [];
+
+    sites.forEach((site) => {
+      latLngList.push(site.coords);
+
+      const customIcon = L.divIcon({
+        className: '',
+        html: `<div class="custom-pin">${site.order}</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -17]
+      });
+
+      const popupHTML = `
+        <div class="popup-content">
+          <span class="popup-era">${site.era}</span>
+          <h4>${site.order}. ${site.name}</h4>
+          <div style="font-size:0.78rem; color:#666; font-weight:600;">📍 ${site.address}</div>
+          <p>${site.summary}</p>
+          <a class="popup-link" href="${site.gmap}" target="_blank">Mở Google Maps chính xác ↗</a>
+        </div>
+      `;
+
+      const marker = L.marker(site.coords, { icon: customIcon })
+        .addTo(map)
+        .bindPopup(popupHTML, { maxWidth: 280 });
+
+      markers.push(marker);
+    });
+
+    // Đường nối vàng đồng nổi bật trên nền vệ tinh xanh thẫm
+    L.polyline(latLngList, {
+      color: '#ffd166',
+      weight: 3.5,
+      dashArray: '8, 8',
+      opacity: 0.95
+    }).addTo(map);
+
+    const bounds = L.latLngBounds(latLngList);
+    map.fitBounds(bounds, { padding: [50, 50] });
+
+    function setActiveButton(btn) {
+      if (!btn) return;
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function focusSite(index, btn) {
+      setActiveButton(btn);
+      const target = sites[index];
+      // Phóng cận cảnh mức 16 để nhìn rõ mái kiến trúc và rừng cây từ vệ tinh
+      map.flyTo(target.coords, 16, { duration: 1.3 });
+      setTimeout(() => {
+        markers[index].openPopup();
+      }, 950);
+    }
+
+    function showAllSites(btn) {
+      setActiveButton(btn);
+      map.closePopup();
+      map.flyToBounds(bounds, { padding: [50, 50], duration: 1.2 });
+    }
+
+    function scrollToMapAndFocus(index) {
+      document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' });
+      const filterButtons = document.querySelectorAll('.btn-filter');
+      focusSite(index, filterButtons[index + 1]);
+    }
+  </script>
+</body>
+</html>
